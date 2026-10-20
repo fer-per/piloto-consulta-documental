@@ -1,0 +1,26 @@
+{
+  "name": "siarc-ara-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interfaz web responsiva del SIARC-ARA (React + Bootstrap)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.4",
+    "utif2": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.2",
+    "vite": "^8.3.4"
+  }
+}

@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Variables de entorno (contienen credenciales)
+.env
+**/.env
+!.env.example
+!**/.env.example
+
+# Compilación del frontend
+frontend/dist/
+
+# PostgreSQL portátil (binarios y datos locales, no versionar)
+postgres-portable/
+
+# Repositorio digital generado (PDF/A, TIFF y miniaturas)
+storage/repositorio/*
+!storage/repositorio/.gitkeep
+
+# Registros y temporales
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+tmp/
+.tmp/
