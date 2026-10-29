@@ -12,6 +12,7 @@ export const pool = new Pool({
   database: config.baseDeDatos.base,
   user: config.baseDeDatos.usuario,
   password: config.baseDeDatos.contrasena,
+  options: `-c search_path=${config.baseDeDatos.esquema},public`,
   ssl: config.baseDeDatos.ssl ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 30_000,

@@ -12,6 +12,10 @@ import { manejarErrores, noEncontrado } from './middlewares/error-handler.js';
 export function crearApp() {
   const app = express();
 
+  if (config.esProduccion) {
+    app.set('trust proxy', 1);
+  }
+
   app.disable('x-powered-by');
   app.use(
     helmet({

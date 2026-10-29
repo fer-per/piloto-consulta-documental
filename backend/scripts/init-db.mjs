@@ -33,6 +33,12 @@ if (!/^[A-Za-z0-9_]+$/.test(nombreBase)) {
   process.exit(1);
 }
 
+const esquema = process.env.DB_SCHEMA ?? 'public';
+if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(esquema)) {
+  console.error(`[init-db] Nombre de esquema inválido: ${esquema}`);
+  process.exit(1);
+}
+
 function leerSql(nombreArchivo) {
   return fs.readFile(path.join(rutaProyecto, 'database', nombreArchivo), 'utf8');
 }
@@ -106,12 +112,20 @@ async function principal() {
   const enEspacio = Date.now();
   await asegurarBaseDeDatos();
 
-  const pool = new Pool({ ...conexion, database: nombreBase });
+  const pool = new Pool({
+    ...conexion,
+    database: nombreBase,
+    options: `-c search_path=${esquema},public`,
+  });
   try {
     if (!soloSeed) {
-      console.log('[init-db] Aplicando esquema (database/schema.sql)...');
-      await pool.query('DROP SCHEMA IF EXISTS public CASCADE');
-      await pool.query('CREATE SCHEMA public');
+      console.log(`[init-db] Recreando esquema "${esquema}"...`);
+      await pool.query(`DROP SCHEMA IF EXISTS ${esquema} CASCADE`);
+      await pool.query(`CREATE SCHEMA ${esquema}`);
+      await pool.query('CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public');
+      await pool.query('CREATE EXTENSION IF NOT EXISTS unaccent SCHEMA public');
+      await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public');
+      console.log(`[init-db] Aplicando esquema (database/schema.sql) en "${esquema}"...`);
       await pool.query(await leerSql('schema.sql'));
       console.log('[init-db] Esquema aplicado.');
     }

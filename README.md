@@ -77,7 +77,32 @@ Scripts disponibles:
 - `npm run db:reset` — recrea el esquema y carga los datos de ejemplo.
 - `npm run db:schema` — solo crea el esquema.
 - `npm run db:seed` — solo carga los datos de ejemplo.
+- `npm run storage:subir` — sube el repositorio local (`storage/repositorio`) a Cloudflare R2.
 - `npm run dev` — arranque con recarga automática (`node --watch`).
+
+### Almacenamiento en Cloudflare R2
+
+El repositorio digital puede residir en disco (`ALMACENAMIENTO=local`) o en un bucket de
+Cloudflare R2 (`ALMACENAMIENTO=r2`). Para usar R2 configure en `backend/.env`:
+
+```
+ALMACENAMIENTO=r2
+R2_ACCOUNT_ID=su_account_id
+R2_ACCESS_KEY_ID=su_access_key
+R2_SECRET_ACCESS_KEY=su_secret_key
+R2_BUCKET=siarc-repositorio
+R2_PREFIX=repositorio
+```
+
+Cree el token de API desde el panel de R2 con permisos de lectura y escritura sobre el
+bucket. Luego genere el repositorio y súbalo:
+
+```powershell
+npm run db:reset
+npm run storage:subir
+```
+
+La API sigue entregando los archivos autenticados (no se exponen URLs públicas del bucket).
 
 ### 3. Frontend
 
@@ -118,6 +143,25 @@ Cargadas por `database/seed.sql`:
 | GET    | `/api/catalogos/series`           | Catálogo de series                     |
 | GET    | `/api/catalogos/tipologias`       | Catálogo de tipologías documentales    |
 | GET    | `/api/auditoria`                  | Registro de auditoría (solo ADMIN)     |
+
+## Despliegue en producción
+
+Requiere un VPS con PostgreSQL (Hostinger solo ofrece PostgreSQL en VPS). Con Node, PM2 y
+Nginx instalados:
+
+```bash
+cd frontend && npm ci && npm run build
+cd ../backend && npm ci
+cp .env.example .env        # ajuste credenciales, JWT_SECRET y R2
+npm run db:reset
+npm run storage:subir
+pm2 start ecosystem.config.cjs
+pm2 startup && pm2 save
+```
+
+Luego copie `deploy/nginx-siarc.conf` a `/etc/nginx/sites-available/siarc`, reemplace
+`TU_DOMINIO` por su dominio, actívelo con un enlace en `sites-enabled` y emita el
+certificado con `certbot --nginx`.
 
 ## Seguridad y privacidad
 

@@ -1,6 +1,32 @@
 import fs from 'node:fs';
 import { manejar } from '../../common/async-handler.js';
+import { abrirObjeto } from '../../config/almacenamiento.js';
+import { errores } from '../../common/errors.js';
 import * as servicio from './documentos.service.js';
+
+async function transmitir(preparado, res, next, cache) {
+  let flujo;
+  if (preparado.remoto) {
+    try {
+      flujo = await abrirObjeto(preparado.clave);
+    } catch {
+      next(errores.archivoNoDisponible());
+      return;
+    }
+    if (!flujo) {
+      next(errores.archivoNoDisponible());
+      return;
+    }
+  } else {
+    flujo = fs.createReadStream(preparado.rutaAbsoluta);
+  }
+
+  res.setHeader('Content-Type', preparado.tipoContenido);
+  res.setHeader('Content-Disposition', `inline; filename="${preparado.nombre}"`);
+  res.setHeader('Cache-Control', cache);
+  flujo.on('error', next);
+  flujo.pipe(res);
+}
 
 export const buscarSimple = manejar(async (req, res) => {
   const resultado = await servicio.buscarSimple(req.datos, req.usuario);
@@ -19,19 +45,10 @@ export const obtenerDetalle = manejar(async (req, res) => {
 
 export const descargarArchivo = manejar(async (req, res, next) => {
   const preparado = await servicio.obtenerArchivo(req.datos.id, req.usuario);
-  res.setHeader('Content-Type', preparado.tipoContenido);
-  res.setHeader('Content-Disposition', `inline; filename="${preparado.nombre}"`);
-  res.setHeader('Cache-Control', 'private, max-age=60');
-  const flujo = fs.createReadStream(preparado.rutaAbsoluta);
-  flujo.on('error', next);
-  flujo.pipe(res);
+  await transmitir(preparado, res, next, 'private, max-age=60');
 });
 
 export const descargarMiniatura = manejar(async (req, res, next) => {
   const preparado = await servicio.obtenerMiniatura(req.datos.id, req.usuario);
-  res.setHeader('Content-Type', preparado.tipoContenido);
-  res.setHeader('Cache-Control', 'private, max-age=300');
-  const flujo = fs.createReadStream(preparado.rutaAbsoluta);
-  flujo.on('error', next);
-  flujo.pipe(res);
+  await transmitir(preparado, res, next, 'private, max-age=300');
 });

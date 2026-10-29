@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../../config/env.js';
+import { existeObjeto, usaAlmacenamientoRemoto } from '../../config/almacenamiento.js';
 import { errores } from '../../common/errors.js';
 import { registrarAccion } from '../auditoria/auditoria.repository.js';
 import * as repositorio from './documentos.repository.js';
@@ -148,16 +149,25 @@ async function prepararArchivo(id, usuario, tipo) {
     throw errores.archivoNoDisponible();
   }
 
-  const rutaAbsoluta = resolverRutaAbsoluta(rutaRelativa);
-  if (!fs.existsSync(rutaAbsoluta)) {
-    throw errores.archivoNoDisponible();
+  let ubicacion;
+  if (usaAlmacenamientoRemoto) {
+    if (!(await existeObjeto(rutaRelativa))) {
+      throw errores.archivoNoDisponible();
+    }
+    ubicacion = { remoto: true, clave: rutaRelativa };
+  } else {
+    const rutaAbsoluta = resolverRutaAbsoluta(rutaRelativa);
+    if (!fs.existsSync(rutaAbsoluta)) {
+      throw errores.archivoNoDisponible();
+    }
+    ubicacion = { remoto: false, rutaAbsoluta };
   }
 
   const esMiniatura = tipo === 'miniatura';
   const esTiff = !esMiniatura && registro.formato === 'TIFF';
 
   return {
-    rutaAbsoluta,
+    ...ubicacion,
     tipoContenido: esMiniatura ? 'image/png' : esTiff ? 'image/tiff' : 'application/pdf',
     nombre: esMiniatura
       ? `${nombreDescarga(registro.titulo, 'png')}`
