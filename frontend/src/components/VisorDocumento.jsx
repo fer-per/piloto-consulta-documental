@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as UTIFModulo from 'utif2';
-import { apiArchivo } from '../../services/api.js';
+import { apiArchivo } from '../services/api.js';
 
 const UTIF = UTIFModulo.default ?? UTIFModulo;
 

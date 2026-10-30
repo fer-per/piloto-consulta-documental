@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 const esquemaPagina = z.coerce.number().int().min(1, 'Página inválida').default(1);
 const esquemaPorPagina = z.coerce.number().int().min(1).max(50, 'Máximo 50 resultados por página').default(10);
-const esquemaOrden = z.enum(['relevancia', 'fecha'], {
-  errorMap: () => ({ message: 'El orden debe ser "relevancia" o "fecha"' }),
+const esquemaOrden = z.enum(['relevancia', 'fecha', 'antiguo', 'titulo'], {
+  errorMap: () => ({ message: 'El orden debe ser "relevancia", "fecha", "antiguo" o "titulo"' }),
 }).default('relevancia');
 const esquemaFecha = z
   .string()
@@ -32,6 +32,7 @@ export const esquemaBusquedaAvanzada = z
     fondo: z.preprocess(aIndefinido, z.coerce.number().int().positive().optional()),
     serie: z.preprocess(aIndefinido, z.string().trim().max(150).optional()),
     tipologia: z.preprocess(aIndefinido, z.string().trim().max(100).optional()),
+    conservacion: z.preprocess(aIndefinido, z.enum(['Bueno', 'Regular', 'Malo']).optional()),
     fecha_desde: z.preprocess(aIndefinido, esquemaFecha.optional()),
     fecha_hasta: z.preprocess(aIndefinido, esquemaFecha.optional()),
     pagina: esquemaPagina,
@@ -39,7 +40,15 @@ export const esquemaBusquedaAvanzada = z
     orden: esquemaOrden,
   })
   .superRefine((datos, contexto) => {
-    const criterios = [datos.texto, datos.fondo, datos.serie, datos.tipologia, datos.fecha_desde, datos.fecha_hasta];
+    const criterios = [
+      datos.texto,
+      datos.fondo,
+      datos.serie,
+      datos.tipologia,
+      datos.conservacion,
+      datos.fecha_desde,
+      datos.fecha_hasta,
+    ];
     if (!criterios.some((criterio) => criterio !== undefined)) {
       contexto.addIssue({
         code: z.ZodIssueCode.custom,

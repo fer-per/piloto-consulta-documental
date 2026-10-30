@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiArchivo } from '../../services/api.js';
+import { apiArchivo } from '../services/api.js';
 
 const cache = new Map();
 

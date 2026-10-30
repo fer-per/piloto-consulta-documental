@@ -1,35 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, guardarToken, quitarToken } from '../services/api.js';
+import {
+  iniciarSesion as iniciarSesionApi,
+  cerrarSesion as cerrarSesionApi,
+  validarSesion,
+  guardarSesion,
+  leerUsuario,
+  limpiarSesion,
+  obtenerToken,
+  EVENTO_SESION,
+} from '../services/api.js';
 
-const CLAVE_USUARIO = 'siarc-ara.usuario';
-const EVENTO_SESION = 'siarc-ara:sesion-invalida';
 const AuthContext = createContext(null);
 
-function leerUsuarioGuardado() {
-  try {
-    const crudo = localStorage.getItem(CLAVE_USUARIO);
-    return crudo ? JSON.parse(crudo) : null;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(leerUsuarioGuardado);
+  const [usuario, setUsuario] = useState(leerUsuario);
   const [cargandoSesion, setCargandoSesion] = useState(true);
 
   useEffect(() => {
-    if (!localStorage.getItem('siarc-ara.token')) {
+    if (!obtenerToken()) {
       setCargandoSesion(false);
       return undefined;
     }
 
     let activo = true;
-    api('/api/auth/sesion')
+    validarSesion()
       .then((datos) => {
         if (!activo) return;
-        setUsuario(datos.usuario);
-        localStorage.setItem(CLAVE_USUARIO, JSON.stringify(datos.usuario));
+        setUsuario(datos);
+        guardarSesion(obtenerToken(), datos);
       })
       .catch(() => {
         if (activo) setUsuario(null);
@@ -49,27 +47,17 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener(EVENTO_SESION, alExpirar);
   }, []);
 
-  const iniciarSesion = useCallback(async (nombreUsuario, contrasena) => {
-    const resultado = await api('/api/auth/login', {
-      metodo: 'POST',
-      cuerpo: { usuario: nombreUsuario, contrasena },
-      autenticado: false,
-    });
-    guardarToken(resultado.token);
-    localStorage.setItem(CLAVE_USUARIO, JSON.stringify(resultado.usuario));
-    setUsuario(resultado.usuario);
-    return resultado;
+  const iniciarSesion = useCallback(async (username, password) => {
+    const datos = await iniciarSesionApi(username, password);
+    guardarSesion(datos.token, datos.user);
+    setUsuario(datos.user);
+    return datos.user;
   }, []);
 
   const cerrarSesion = useCallback(async () => {
-    try {
-      await api('/api/auth/logout', { metodo: 'POST' });
-    } catch {
-      // La sesión se descarta aunque el cierre no pueda registrarse.
-    } finally {
-      quitarToken();
-      setUsuario(null);
-    }
+    await cerrarSesionApi();
+    limpiarSesion();
+    setUsuario(null);
   }, []);
 
   const valor = useMemo(
@@ -82,8 +70,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const contexto = useContext(AuthContext);
-  if (!contexto) {
-    throw new Error('useAuth debe usarse dentro de AuthProvider.');
-  }
+  if (!contexto) throw new Error('useAuth debe usarse dentro de AuthProvider');
   return contexto;
 }

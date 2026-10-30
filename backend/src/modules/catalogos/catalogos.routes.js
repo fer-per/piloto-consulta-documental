@@ -9,6 +9,20 @@ const router = Router();
 router.use(autenticar, autorizar(...todosPerfiles));
 
 router.get(
+  '/',
+  manejar(async (_req, res) => {
+    const [fondos, series, tipologias, conservaciones, resumen] = await Promise.all([
+      repositorio.listarFondos(),
+      repositorio.listarSeries(),
+      repositorio.listarTipologias(),
+      repositorio.listarConservaciones(),
+      repositorio.obtenerResumen(),
+    ]);
+    res.json({ fondos, series, tipologias, conservaciones, ...resumen });
+  }),
+);
+
+router.get(
   '/fondos',
   manejar(async (req, res) => res.json({ fondos: await repositorio.listarFondos() })),
 );

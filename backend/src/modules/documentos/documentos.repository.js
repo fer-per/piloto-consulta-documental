@@ -43,12 +43,15 @@ const RELACIONES = `
 
 const CONTENIDO_TS = `to_tsvector('spanish', f_unaccent(coalesce(a.alcance_contenido, '')))`;
 const ORDEN_FECHA = 'coalesce(a.fecha_produccion, a.fecha_carga::date) DESC, a.id DESC';
+const ORDEN_ANTIGUO = 'coalesce(a.fecha_produccion, a.fecha_carga::date) ASC, a.id ASC';
+const ORDEN_TITULO = 'f_unaccent(te.nombre) ASC, a.id ASC';
 
 export async function buscarDocumentos({
   texto,
   fondo,
   serie,
   tipologia,
+  conservacion,
   fechaDesde,
   fechaHasta,
   orden,
@@ -74,6 +77,7 @@ export async function buscarDocumentos({
   if (fondo) condiciones.push(`f.id = ${parametro(fondo)}`);
   if (serie) condiciones.push(`a.serie = ${parametro(serie)}`);
   if (tipologia) condiciones.push(`a.tipologia_documental = ${parametro(tipologia)}`);
+  if (conservacion) condiciones.push(`a.estado_conservacion = ${parametro(conservacion)}`);
   if (fechaDesde) condiciones.push(`a.fecha_produccion >= ${parametro(fechaDesde)}`);
   if (fechaHasta) condiciones.push(`a.fecha_produccion <= ${parametro(fechaHasta)}`);
 
@@ -90,10 +94,18 @@ export async function buscarDocumentos({
         + similarity(f_unaccent(coalesce(a.descriptores, '')), f_unaccent($1)) * 0.3) AS relevancia`
     : 'NULL::double precision AS relevancia';
 
-  const ordenSql =
-    orden === 'fecha' || !texto
-      ? ORDEN_FECHA
-      : `relevancia DESC, ${ORDEN_FECHA}`;
+  let ordenSql;
+  if (orden === 'fecha') {
+    ordenSql = ORDEN_FECHA;
+  } else if (orden === 'antiguo') {
+    ordenSql = ORDEN_ANTIGUO;
+  } else if (orden === 'titulo') {
+    ordenSql = ORDEN_TITULO;
+  } else if (texto) {
+    ordenSql = `relevancia DESC, ${ORDEN_FECHA}`;
+  } else {
+    ordenSql = ORDEN_FECHA;
+  }
 
   const desplazamiento = (pagina - 1) * porPagina;
   const { rows } = await consultar(
