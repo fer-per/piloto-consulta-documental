@@ -133,8 +133,8 @@ function normalizarResumen(documento) {
     repositorio: documento.repositorio,
     relevancia: documento.relevancia,
     miniatura_url: documento.miniaturaUrl ?? null,
-    archivo_url: `/api/documentos/${documento.id}/archivo`,
-    digitalizado: Boolean(documento.miniaturaUrl),
+    archivo_url: documento.archivoUrl ?? `/api/documentos/${documento.id}/archivo`,
+    digitalizado: Boolean(documento.digitalizado ?? (documento.miniaturaUrl || documento.archivoUrl)),
     descriptores: listaDescriptores(documento.descriptores),
     alcance: documento.alcanceContenido ?? null,
   };

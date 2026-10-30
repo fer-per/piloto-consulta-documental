@@ -31,6 +31,8 @@ function aDtoResumen(fila) {
     siglo: fila.siglo,
     relevancia: fila.relevancia == null ? null : Number(Number(fila.relevancia).toFixed(4)),
     miniaturaUrl: fila.ruta_miniatura ? `/api/documentos/${fila.id}/miniatura` : null,
+    archivoUrl: fila.ruta_archivo ? `/api/documentos/${fila.id}/archivo` : null,
+    digitalizado: Boolean(fila.ruta_archivo),
   };
 }
 
@@ -120,11 +122,11 @@ export async function obtenerDetalle(id, usuario) {
 }
 
 function resolverRutaAbsoluta(rutaRelativa) {
-  const base = config.rutas.repositorio.endsWith(path.sep)
-    ? config.rutas.repositorio
-    : config.rutas.repositorio + path.sep;
-  const absoluta = path.resolve(config.rutas.repositorio, rutaRelativa);
-  if (!absoluta.startsWith(base)) {
+  const base = path.resolve(config.rutas.repositorio);
+  const limpia = String(rutaRelativa ?? '').replace(/^[\\/]+/, '');
+  const absoluta = path.resolve(base, limpia);
+  const relativa = path.relative(base, absoluta);
+  if (relativa.startsWith('..') || path.isAbsolute(relativa)) {
     throw errores.rutaInvalida();
   }
   return absoluta;
